@@ -12,6 +12,15 @@ function App() {
     }
   }, []);
 
+  const [ann, setAnn] = useState(null);
+  useEffect(() => {
+    if (!ann) {
+      const ann = new window.brain.NeuralNetwork();
+      setAnn(ann);
+      console.log(ann);
+    }
+  }, []);
+
   const [parsedData, setParsedData] = useState([]);
   const [csvToJson, setCsvToJson] = useState({});
 
@@ -21,6 +30,10 @@ function App() {
 
   const [trainText, setTrainText] = useState();
   const [predictText, setPredictText] = useState();
+
+  const [target, setTargetText] = useState();
+  const [feature, setFeatureText] = useState();
+
 
   const changeHandler = event => {
     // Passing file data (event.target.files[0]) to parse using Papa.parse
@@ -36,7 +49,7 @@ function App() {
           rowsArray.push(Object.keys(d));
           valuesArray.push(Object.values(d));
         });
-
+         
         // Parsed Data Response in array format
         setParsedData(results.data);
 
@@ -48,6 +61,7 @@ function App() {
         setValues(valuesArray);
         // console.table(valuesArray);
         let result = [];
+
         for (let i = 1; i < valuesArray.length; i++) {
           let obj = {};
           let currentline = valuesArray[i];
@@ -60,11 +74,14 @@ function App() {
         }
         setCsvToJson(result);
         console.log(result);
+        
+        
+
       },
     });
   };
 
-  const train = trainData => {
+  const train = () => {
     try {
       net.train([trainText], { iterations: 1000 });
 
@@ -74,8 +91,51 @@ function App() {
     }
   };
 
-  const predict = predictData => {
+  const predict = () => {
     const output = net.run([predictText]);
+    console.log(output);
+    alert(output);
+  };
+  const change = () => {
+   
+    let featurecols= feature.split(",")
+    // console.log(featurecols)
+    let trainData=[];
+    for (let i = 0; i < csvToJson.length; i++) {
+      let output = {};
+      let x = csvToJson[i]
+      output[target]=x[target];
+      let input ={}
+      for(let j=0;j<featurecols.length;j++){
+        input[featurecols[j]]=x[featurecols[j]];
+      }
+      let items={}
+      items['input']=input
+      items['output']=output
+      trainData.push(items)
+    }
+    trainAnn(trainData)
+    // console.log(trainData)
+    // console.log(csvToJson)
+
+
+  };
+  const trainAnn = (trainData) => {
+    try {
+      ann.train(trainData, { iterations: 1000,log:stats=>console.log(stats),logPeriod:1 });
+      alert("Training done");
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  const predictAnn = () => {
+    let predictList= predictText.split(",")
+    let items={}
+    for(let i=0;i<predictList.length;i++){
+       items[tableRows[i]]=predictList[0]
+    }
+    console.log(items);
+    const output = ann.run(items);
     console.log(output);
     alert(output);
   };
@@ -93,11 +153,21 @@ function App() {
       <br />
       <br />
       <div>
-        <input onChange={e => setTrainText(e.target.value)} type="text" />
+        {/* <input onChange={e => setTrainText(e.target.value)} type="text" />
         <button onClick={train}>Train</button>
 
         <input onChange={e => setPredictText(e.target.value)} type="text" />
-        <button onClick={predict}>Predict</button>
+        <button onClick={predict}>Predict</button> */}
+        
+        <input onChange={e => setFeatureText(e.target.value)} type="text" />
+
+        <input onChange={e => setTargetText(e.target.value)} type="text" />
+        <button onClick={change}>Train</button>
+        <br/>
+        <input onChange={e => setPredictText(e.target.value)} type="text" />
+        <button onClick={predictAnn}>Predict</button> 
+        
+        
       </div>
     </div>
   );
